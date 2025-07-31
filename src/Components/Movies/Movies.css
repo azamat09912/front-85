@@ -1,0 +1,46 @@
+.movies-container {
+  padding: 24px;
+  text-align: center;
+}
+
+.movies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.movie-card {
+  border: 1px solid #ddd;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #fefefe;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.movie-card img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.movie-card h3 {
+  margin: 10px 0 6px;
+}
+
+.movie-card button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #999;
+  transition: all 0.3s;
+}
+
+.movie-card button:hover {
+  color: red;
+}
+
+.movie-card button.liked {
+  color: red;
+  font-weight: bold;
+}
