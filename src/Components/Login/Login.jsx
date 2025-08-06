@@ -29,8 +29,8 @@ function Login() {
     return;
   }
   const url = isRegister
-    ? 'http://localhost:3002/api/auth/register'
-    : 'http://localhost:3002/api/auth/login';
+    ? 'https://qazaqcinema.onrender.com/api/auth/register'
+    : 'https://qazaqcinema.onrender.com/api/auth/login';
 
   try {
     const response = await axios.post(url, { email, password });
@@ -75,7 +75,6 @@ function Login() {
 
         <form onSubmit={handleSubmit} className="login-form" noValidate>
           <div className="input-group login-email-group">
-            <FaEnvelope className="icon login-icon" />
             <input
               type="email"
               className="login-input login-email-input"
@@ -87,7 +86,6 @@ function Login() {
           </div>
 
           <div className="input-group login-password-group">
-            <FaLock className="icon login-icon" />
             <input
               type={showPass ? 'text' : 'password'}
               className="login-input login-password-input"

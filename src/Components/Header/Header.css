@@ -2,15 +2,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #ffffff;
-  color: black;
+  background-color: var(--bg);
+  color: var(--text);
   padding: 20px 5%;
   position: sticky;
   top: 0;
   z-index: 1000;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
 }
 
 .logo-section {
@@ -38,10 +38,10 @@
 .nav a {
   position: relative;
   text-decoration: none;
-  color: black;
+  color: var(--text);
   font-size: 16px;
   font-weight: 700;
-  transition: color 0.3s ease;
+  transition: var(--transition);
   white-space: nowrap;
 }
 
@@ -52,7 +52,7 @@
   left: 0;
   width: 0%;
   height: 2px;
-  background-color: #e50914;
+  background-color: var(--accent);
   transition: width 0.3s ease;
 }
 
@@ -61,33 +61,32 @@
 }
 
 .nav a:hover {
-  color: #e50914;
+  color: var(--accent);
 }
 
 .login-button {
-  background: linear-gradient(to right, #ff0000, #990000);
+  background: var(--primary);
   color: white;
   padding: 8px 24px;
   border: none;
   border-radius: 16px;
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: var(--transition);
   font-size: 14px;
 }
 
 .login-button:hover {
-  background: linear-gradient(to right, #ff3333, #cc0000);
-  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+  background: var(--secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transform: translateY(-2px);
 }
 
 .login-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(255, 0, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* Стили для компактного бургер-меню */
 .burger {
   display: none;
   width: 20px;
@@ -105,7 +104,7 @@
   position: absolute;
   height: 2px;
   width: 100%;
-  background: #000;
+  background: var(--text);
   border-radius: 2px;
   opacity: 1;
   left: 0;
@@ -142,7 +141,29 @@
   transform: rotate(-45deg);
 }
 
-/* Адаптивные стили */
+.theme-toggle-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  background-color: var(--secondary);
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+  margin-left: 10px;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0);
+}
+
 @media (max-width: 1024px) {
   .logo-img {
     width: 160px;
@@ -178,7 +199,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    background-color: #fff;
+    background-color: var(--bg);
     position: absolute;
     top: 100%;
     left: 0;
@@ -196,7 +217,7 @@
   
   .nav a {
     padding: 12px 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--card-bg);
     font-size: 16px;
   }
   

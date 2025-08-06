@@ -4,8 +4,10 @@ import img3 from '../../assets/Bgfilm2.jpg';
 import img4 from '../../assets/Bgfilm.jpg'; // пусть это будет центральное фото
 
 export default function Home3page() {
-  const handleClick = () => {
-    window.scrollTo({ top: 800, behavior: 'smooth' });
+ 
+
+   const handleClick = () => {
+    navigate('/movies');  
   };
 
   return (
@@ -31,14 +33,12 @@ export default function Home3page() {
                 көрерменге нақты әрі шынайы жеткізетін тұлға.
               </p>
               
-              <button className="know-more1" onClick={handleClick}>
-                Фильм қарау
-              </button>
+           
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </div>  
     
   );
 }

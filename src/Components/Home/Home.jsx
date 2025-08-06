@@ -6,6 +6,9 @@ import Home2page from "../Home2page/Home2page.jsx";
 import Home3page from "../Home3page/Home3page.jsx";
 import Home4page from "../Home4page/Home4page.jsx";
 import Home5page from "../Home5page/Home5page.jsx"; // Импортируем Home3page 
+import Footer from "../Footer/Footer.jsx"
+
+
 
 
 
@@ -23,7 +26,7 @@ export default function Home() {
         <div className="hero-background" style={{ backgroundImage: `url(${img2})` }}></div>
         <div className="hero-content">
           <div className="hero-text">
-            <h1>QAZAQ KINOSYNYŊ    <br />     ㅤ RUHY KELEŞEGIN TANY</h1>
+            <h1>Қазақ киносының    <br />     ㅤ ㅤРухы келешегінің таңы</h1>
             <p className='introduction'>
               Жаңа фильмдер, терең рецензиялар және қазақ кино әлеміндегі ең үздік <br />ㅤㅤ  ㅤ тұлғалар  туралы
               мәлімет, Кинематография әлеміне терең үңіліңіз — QazaqCinema

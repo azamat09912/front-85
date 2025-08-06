@@ -1,6 +1,4 @@
-.home-container{
-   height: 12000px;
-}
+
 .hero-section {
   position: relative;
   width: 99vw;
@@ -36,7 +34,7 @@
 .hero-content h1 {
   font-size: 5.6rem;
   position: relative;
-  left: -260px;
+  left: -290px;
   bottom: 110px;
 }
 
@@ -49,7 +47,7 @@
     bottom: 120px;
 }
 .know-more {
-  background: linear-gradient(to right, #ff0000, #990000);
+  background: linear-gradient(to right, #4b1ccd, #2c1961);
   color: white;
   padding: 12px 32px; /* Больше отступов */
   border: none;

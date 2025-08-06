@@ -1,142 +1,193 @@
 import React, { useEffect, useState } from 'react';
-
-// Список актёров
-const actorsData = [
-  { id: 1, name: 'Данияр Алшинов', image: 'https://www.film.ru/sites/default/files/people/49930921-2281460.jpg', youtubeUrl: 'https://www.youtube.com/watch?v=2nKrQF2xZ4E' },
-  { id: 2, name: 'Самал Еслямова', image: 'https://www.film.ru/sites/default/files/people/49930921-2281460.jpg', youtubeUrl: 'https://www.youtube.com/watch?v=3mN8vOXRaCw' },
-  { id: 3, name: 'Берик Айтжанов', image: 'https://www.film.ru/sites/default/files/people/49930921-2281460.jpg', youtubeUrl: 'https://www.youtube.com/watch?v=sXU_7Fujp-I' },
-  { id: 4, name: 'Аружан Джазильбекова', image: 'https://www.film.ru/sites/default/files/people/49930921-2281460.jpg', youtubeUrl: 'https://www.youtube.com/watch?v=9McNQ9thVvo' },
-  { id: 5, name: 'Нуркен Туматаев', image: 'https://www.film.ru/sites/default/files/people/49930921-2281460.jpg', youtubeUrl: 'https://www.youtube.com/watch?v=WJxCqRKVkIY' },
-  { id: 6, name: 'Куаныш Султанбеков', image: 'https://www.film.ru/sites/default/files/people/49930921-2281460.jpg', youtubeUrl: 'https://www.youtube.com/watch?v=dCk_1RJb13g' },
-  { id: 7, name: 'Азамат Сатыбалды', image: 'https://www.film.ru/sites/default/files/people/49930921-2281460.jpg', youtubeUrl: 'https://www.youtube.com/watch?v=3lOeUJH0ZhA' },
-  { id: 8, name: 'Фархат Абдраимов', image: 'https://www.film.ru/sites/default/files/people/49930921-2281460.jpg', youtubeUrl: 'https://www.youtube.com/watch?v=tZu1gFS3d2Y' },
-];
+import { useNavigate } from 'react-router-dom';
+import './Actors.css'; // Используем CSS от Director
 
 export default function Actors() {
-  const [favorites, setFavorites] = useState([]);
+  const [actors, setActors] = useState([]);
+  const [favoriteActors, setFavoriteActors] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [search, setSearch] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [sortOrder, setSortOrder] = useState('asc');
+
   const token = localStorage.getItem('token');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const saved = localStorage.getItem('favoriteActors');
-    if (saved) setFavorites(JSON.parse(saved));
-  }, []);
+    const fetchActors = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`https://qazaqcinema.onrender.com/api/actors?search=${encodeURIComponent(search)}`);
+        if (!response.ok) throw new Error('Актерлерді жүктеу кезінде қате пайда болды');
+        const data = await response.json();
+        setActors(data.data || data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchActors, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [search]);
 
   useEffect(() => {
-    localStorage.setItem('favoriteActors', JSON.stringify(favorites));
-  }, [favorites]);
+    if (!token) return;
 
-  const toggleFavorite = (actor) => {
+    const fetchFavoriteActors = async () => {
+      try {
+        const response = await fetch('https://qazaqcinema.onrender.com/api/actors/favoriteactors', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        setFavoriteActors(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchFavoriteActors();
+  }, [token]);
+
+  const toggleFavoriteActor = async (actor) => {
     if (!token) {
-      alert('Сначала войдите в аккаунт, чтобы добавлять актёров в избранное.');
+      navigate('/login');
       return;
     }
-    setFavorites((prev) => {
-      const isFav = prev.find((a) => a.id === actor.id);
-      return isFav ? prev.filter((a) => a.id !== actor.id) : [...prev, actor];
+
+    const isFav = favoriteActors.some((fav) => fav.id === actor.id);
+
+    try {
+      if (isFav) {
+        await fetch(`https://qazaqcinema.onrender.com/api/actors/favoriteactors/${actor.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFavoriteActors(favoriteActors.filter((fav) => fav.id !== actor.id));
+      } else {
+        await fetch('https://qazaqcinema.onrender.com/api/actors/favoriteactors', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ actorId: actor.id }),
+        });
+        setFavoriteActors([...favoriteActors, actor]);
+      }
+    } catch (error) {
+      console.error('Қате:', error);
+      alert('Қате пайда болды. Қайталап көріңіз.');
+    }
+  };
+
+  const filteredFavorites = favoriteActors.filter((actor) => {
+    const matchesSearch = search
+      ? actor.name?.toLowerCase().includes(search.toLowerCase())
+      : true;
+    return matchesSearch;
+  });
+
+  const sortActorsByName = (list) => {
+    return [...list].sort((a, b) => {
+      if (sortOrder === 'asc') {
+        return a.name.localeCompare(b.name, 'kk');
+      } else {
+        return b.name.localeCompare(a.name, 'kk');
+      }
     });
   };
 
-  const actorsToShow = showFavorites ? favorites : actorsData;
-  const filteredActors = actorsToShow.filter((actor) =>
-    actor.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = showFavorites ? filteredFavorites : actors;
+  const actorsToShow = sortActorsByName(filtered);
 
   return (
-    <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#121212', color: 'white', minHeight: '100vh' }}>
-      <h1>🎭 Қазақ Актерлары</h1>
+    <div className="directors-container">
+      <h1>Қазақ Актерлері</h1>
 
-      {!token && (
-        <p style={{ color: '#ffcc00' }}>
-          🔒 Войдите в аккаунт, чтобы сохранять актёров в избранное
-        </p>
-      )}
+      <div className="controls">
+        <button
+          onClick={() => setShowFavorites(!showFavorites)}
+          className={`toggle-btn ${showFavorites ? 'active' : ''}`}
+        >
+          {showFavorites ? '← Барлық актерлер' : 'Таңдаулылар'}
+        </button>
 
-      <button
-        onClick={() => setShowFavorites(!showFavorites)}
-        style={{
-          marginBottom: '1rem',
-          padding: '0.7rem 1.2rem',
-          backgroundColor: showFavorites ? '#e50914' : '#008000',
-          border: 'none',
-          borderRadius: '6px',
-          color: 'white',
-          cursor: 'pointer',
-          fontWeight: 'bold',
-        }}
-      >
-        {showFavorites ? '← Все актёры' : '⭐ Мои избранные'}
-      </button>
+        <div className="sort-wrapper">
+          <label htmlFor="sortOrder">Сұрыптау:</label>
+          <select
+            id="sortOrder"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="sort-select"
+          >
+            <option value="asc">А-дан Я-ға</option>
+            <option value="desc">Я-дан А-ға</option>
+          </select>
+        </div>
 
-      <div>
-        <input
-          type="text"
-          placeholder="🔍 Поиск актёров..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            padding: '0.5rem',
-            marginBottom: '1.5rem',
-            borderRadius: '5px',
-            border: 'none',
-            width: '60%',
-            maxWidth: '400px',
-          }}
-        />
+        <div className="search-wrapper">
+          {!isFocused && (
+            <img src="https://cdn-icons-png.freepik.com/512/9135/9135995.png" alt="search" className="search-logo" />
+          )}
+          <input
+            type="text"
+            placeholder="Іздеу..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              if (search === '') setIsFocused(false);
+            }}
+          />
+        </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))',
-          gap: '1.5rem',
-          justifyItems: 'center',
-        }}
-      >
-        {filteredActors.length === 0 ? (
-          <p>❗ Актёры не найдены.</p>
-        ) : (
-          filteredActors.map((actor) => {
-            const isFav = favorites.some((a) => a.id === actor.id);
-            return (
-              <div
-                key={actor.id}
-                style={{
-                  backgroundColor: '#222',
-                  borderRadius: '10px',
-                  padding: '1rem',
-                  width: '200px',
-                  boxShadow: '0 0 10px #000',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <img
-                  src={actor.image}
-                  alt={actor.name}
-                  style={{ width: '100%', borderRadius: '10px', cursor: 'pointer' }}
-                  onClick={() => window.open(actor.youtubeUrl, '_blank')}
-                />
-                <h3 style={{ margin: '0.8rem 0' }}>{actor.name}</h3>
-                <button
-                  onClick={() => toggleFavorite(actor)}
-                  style={{
-                    backgroundColor: isFav ? '#e50914' : '#555',
-                    border: 'none',
-                    borderRadius: '20px',
-                    padding: '0.5rem 1rem',
-                    color: 'white',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {isFav ? 'Удалить из избранного ❤️' : 'В избранное 🤍'}
-                </button>
-              </div>
-            );
-          })
+      {isLoading && <div className="loader">Жүктелуде...</div>}
+      {error && <div className="error">{error}</div>}
+
+      <div className="directors-grid">
+        {actorsToShow.length === 0 && !isLoading && (
+          <p className="no-directors">Актерлер табылмады</p>
         )}
+
+        {actorsToShow.map((actor) => (
+          <div key={actor.id} className="director-card">
+            <img
+              src={actor.image}
+              alt={actor.name}
+              className="director-photo"
+            />
+            <h3>{actor.name}</h3>
+            <p className="director-bio">{actor.bio}</p>
+            <p className="director-birthyear">Туылған жылы: {actor.birthyear}</p>
+            <button
+              onClick={() => toggleFavoriteActor(actor)}
+              className={`fav-btn ${favoriteActors.some((fav) => fav.id === actor.id) ? 'favorited' : ''}`}
+              aria-label="Таңдаулыға қосу"
+              title="Таңдаулыға қосу"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill={favoriteActors.some((fav) => fav.id === actor.id) ? 'red' : 'none'}
+                stroke={favoriteActors.some((fav) => fav.id === actor.id) ? 'red' : 'gray'}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="24"
+                height="24"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,143 +1,196 @@
 import React, { useEffect, useState } from 'react';
-
-// Қазақ режиссерларының тізімі
-const directorsData = [
-  { id: 1, name: 'Жан Тұрысбек', image: 'https://sn.kz/cache/imagine/main_page_full/uploads/news/2019/08/09/5d4d8527a0f89795763247.jpeg', youtubeUrl: 'https://www.youtube.com/watch?v=dZYuRq6s06A' },
-  { id: 2, name: 'Серік Абдрахманов', image: 'https://sn.kz/cache/imagine/main_page_full/uploads/news/2019/08/09/5d4d8527a0f89795763247.jpeg', youtubeUrl: 'https://www.youtube.com/watch?v=7_YEsRkO1kM' },
-  { id: 3, name: 'Бақыт Қайырбеков', image: 'https://sn.kz/cache/imagine/main_page_full/uploads/news/2019/08/09/5d4d8527a0f89795763247.jpeg', youtubeUrl: 'https://www.youtube.com/watch?v=CsD5twMq5sI' },
-  { id: 4, name: 'Айдос Ержан', image: 'https://sn.kz/cache/imagine/main_page_full/uploads/news/2019/08/09/5d4d8527a0f89795763247.jpeg', youtubeUrl: 'https://www.youtube.com/watch?v=JoQX_8OYQFc' },
-  { id: 5, name: 'Әбділда Тәжібаев', image: 'https://sn.kz/cache/imagine/main_page_full/uploads/news/2019/08/09/5d4d8527a0f89795763247.jpeg', youtubeUrl: 'https://www.youtube.com/watch?v=Xchc9LpTziY' },
-  { id: 6, name: 'Нұржан Аушев', image: 'https://sn.kz/cache/imagine/main_page_full/uploads/news/2019/08/09/5d4d8527a0f89795763247.jpeg', youtubeUrl: 'https://www.youtube.com/watch?v=ZcywQuGB0xM' },
-  { id: 7, name: 'Қасымхан Қалиев', image: 'https://sn.kz/cache/imagine/main_page_full/uploads/news/2019/08/09/5d4d8527a0f89795763247.jpeg', youtubeUrl: 'https://www.youtube.com/watch?v=pM6oKavHx_U' },
-  { id: 8, name: 'Мұрат Әбенов', image: 'https://sn.kz/cache/imagine/main_page_full/uploads/news/2019/08/09/5d4d8527a0f89795763247.jpeg', youtubeUrl: 'https://www.youtube.com/watch?v=oyED8XP7QAE' },
- 
-];
+import { useNavigate } from 'react-router-dom';
+import './Director.css';
 
 export default function Directors() {
-  const [favorites, setFavorites] = useState([]);
+  const [directors, setDirectors] = useState([]);
+  const [favoriteDirectors, setFavoriteDirectors] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [search, setSearch] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [sortOrder, setSortOrder] = useState('asc');
+
   const token = localStorage.getItem('token');
+  const navigate = useNavigate();
 
+  // Загрузка всех режиссёров
   useEffect(() => {
-    const saved = localStorage.getItem('favoriteDirectors');
-    if (saved) setFavorites(JSON.parse(saved));
-  }, []);
+    const fetchDirectors = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`https://qazaqcinema.onrender.com/api/directors?search=${encodeURIComponent(search)}`);
+        if (!response.ok) throw new Error('Режиссерлерді жүктеу кезінде қате пайда болды');
+        const data = await response.json();
+        setDirectors(data.data || data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
+    const debounceTimer = setTimeout(fetchDirectors, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [search]);
+
+  // Загрузка избранных режиссёров
   useEffect(() => {
-    localStorage.setItem('favoriteDirectors', JSON.stringify(favorites));
-  }, [favorites]);
+    if (!token) return;
 
-  const toggleFavorite = (director) => {
+    const fetchFavoriteDirectors = async () => {
+      try {
+        const response = await fetch('https://qazaqcinema.onrender.com/api/directors/favoritedirectors', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        setFavoriteDirectors(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchFavoriteDirectors();
+  }, [token]);
+
+  // Добавить/удалить из избранного
+  const toggleFavoriteDirector = async (director) => {
     if (!token) {
-      alert('Сначала войдите в аккаунт, чтобы добавлять режиссеров в избранное.');
+      navigate('/login');
       return;
     }
-    setFavorites((prev) => {
-      const isFav = prev.find((d) => d.id === director.id);
-      return isFav ? prev.filter((d) => d.id !== director.id) : [...prev, director];
+
+    const isFav = favoriteDirectors.some((fav) => fav.id === director.id);
+
+    try {
+      if (isFav) {
+        await fetch(`https://qazaqcinema.onrender.com/api/directors/favoritedirectors/${director.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFavoriteDirectors(favoriteDirectors.filter((fav) => fav.id !== director.id));
+      } else {
+        await fetch('https://qazaqcinema.onrender.com/api/directors/favoritedirectors', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ directorId: director.id }),
+        });
+        setFavoriteDirectors([...favoriteDirectors, director]);
+      }
+    } catch (error) {
+      console.error('Қате:', error);
+      alert('Қате пайда болды. Қайталап көріңіз.');
+    }
+  };
+
+  const filteredFavorites = favoriteDirectors.filter((director) => {
+    const matchesSearch = search
+      ? director.name?.toLowerCase().includes(search.toLowerCase())
+      : true;
+    return matchesSearch;
+  });
+
+  const sortDirectorsByName = (list) => {
+    return [...list].sort((a, b) => {
+      if (sortOrder === 'asc') {
+        return a.name.localeCompare(b.name, 'kk');
+      } else {
+        return b.name.localeCompare(a.name, 'kk');
+      }
     });
   };
 
-  const directorsToShow = showFavorites ? favorites : directorsData;
-  const filteredDirectors = directorsToShow.filter((director) =>
-    director.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = showFavorites ? filteredFavorites : directors;
+  const directorsToShow = sortDirectorsByName(filtered);
 
   return (
-    <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#121212', color: 'white', minHeight: '100vh' }}>
-      <h1>🎬 Қазақ Режиссерлары</h1>
+    <div className="directors-container">
+      <h1>Қазақ Режиссерлері</h1>
 
-      {!token && (
-        <p style={{ color: '#ffcc00' }}>
-          🔒 Войдите в аккаунт, чтобы сохранять режиссеров в избранное
-        </p>
-      )}
+      <div className="controls">
+        <button
+          onClick={() => setShowFavorites(!showFavorites)}
+          className={`toggle-btn ${showFavorites ? 'active' : ''}`}
+        >
+          {showFavorites ? '← Барлық режиссерлер' : 'Таңдаулылар'}
+        </button>
 
-      <button
-        onClick={() => setShowFavorites(!showFavorites)}
-        style={{
-          marginBottom: '1rem',
-          padding: '0.7rem 1.2rem',
-          backgroundColor: showFavorites ? '#e50914' : '#008000',
-          border: 'none',
-          borderRadius: '6px',
-          color: 'white',
-          cursor: 'pointer',
-          fontWeight: 'bold',
-        }}
-      >
-        {showFavorites ? '← Все режиссеры' : '⭐ Мои избранные'}
-      </button>
+        <div className="sort-wrapper">
+          <label htmlFor="sortOrder">Сұрыптау:</label>
+          <select
+            id="sortOrder"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="sort-select"
+          >
+            <option value="asc">А-дан Я-ға</option>
+            <option value="desc">Я-дан А-ға</option>
+          </select>
+        </div>
 
-      <div>
-        <input
-          type="text"
-          placeholder="🔍 Поиск режиссеров..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            padding: '0.5rem',
-            marginBottom: '1.5rem',
-            borderRadius: '5px',
-            border: 'none',
-            width: '60%',
-            maxWidth: '400px',
-          }}
-        />
+        <div className="search-wrapper">
+          {!isFocused && (
+            <img src="https://cdn-icons-png.freepik.com/512/9135/9135995.png" alt="search" className="search-logo" />
+          )}
+          <input
+            type="text"
+            placeholder="Іздеу..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              if (search === '') setIsFocused(false);
+            }}
+          />
+        </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))',
-          gap: '1.5rem',
-          justifyItems: 'center',
-        }}
-      >
-        {filteredDirectors.length === 0 ? (
-          <p>❗ Режиссерлары не найдены.</p>
-        ) : (
-          filteredDirectors.map((director) => {
-            const isFav = favorites.some((d) => d.id === director.id);
-            return (
-              <div
-                key={director.id}
-                style={{
-                  backgroundColor: '#222',
-                  borderRadius: '10px',
-                  padding: '1rem',
-                  width: '200px',
-                  boxShadow: '0 0 10px #000',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <img
-                  src={director.image}
-                  alt={director.name}
-                  style={{ width: '100%', borderRadius: '10px', cursor: 'pointer' }}
-                  onClick={() => window.open(director.youtubeUrl, '_blank')}
-                />
-                <h3 style={{ margin: '0.8rem 0' }}>{director.name}</h3>
-                <button
-                  onClick={() => toggleFavorite(director)}
-                  style={{
-                    backgroundColor: isFav ? '#e50914' : '#555',
-                    border: 'none',
-                    borderRadius: '20px',
-                    padding: '0.5rem 1rem',
-                    color: 'white',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {isFav ? 'Удалить из избранного ❤️' : 'В избранное 🤍'}
-                </button>
-              </div>
-            );
-          })
+      {isLoading && <div className="loader">Жүктелуде...</div>}
+      {error && <div className="error">{error}</div>}
+
+      <div className="directors-grid">
+        {directorsToShow.length === 0 && !isLoading && (
+          <p className="no-directors">Режиссерлер табылмады</p>
         )}
+
+        {directorsToShow.map((director) => (
+          <div key={director.id} className="director-card">
+            <img
+              src={director.image}
+              alt={director.name}
+              className="director-photo"
+            />
+            <h3>{director.name}</h3>
+            <p className="director-bio">{director.bio}</p>
+            <p className="director-birthyear">Туылған жылы: {director.birthyear}</p>
+            <button
+              onClick={() => toggleFavoriteDirector(director)}
+              className={`fav-btn ${favoriteDirectors.some((fav) => fav.id === director.id) ? 'favorited' : ''}`}
+              aria-label="Таңдаулыға қосу"
+              title="Таңдаулыға қосу"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill={favoriteDirectors.some((fav) => fav.id === director.id) ? 'red' : 'none'}
+                stroke={favoriteDirectors.some((fav) => fav.id === director.id) ? 'red' : 'currentColor'}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="24"
+                height="24"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

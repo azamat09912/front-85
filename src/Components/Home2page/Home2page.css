@@ -1,6 +1,5 @@
 .best-films-container {
   padding: 24px;
-  background-color: #fdfdfd;
 }
 
 .best-films-container h2 {
@@ -8,7 +7,6 @@
   margin-bottom: 20px;
   font-size: 28px;
   font-weight: bold;
-  color: #222;
 }
 
 /* Горизонтальный скролл с плавной прокруткой */
